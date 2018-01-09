@@ -49,6 +49,7 @@ struct ROM_DATA{ //ROM структура данных
   float _ROM_T_Stop;
   float _ROM_T_Avariya; //
   bool _ROM_b_N2;
+  int _ROM_T_Nasos2;
 };
 ROM_DATA _ROM_DATA;
 
@@ -61,7 +62,7 @@ int _Count = -3000;  int __t1; int __t2; bool _b_pref_change = false;
 int _V1_rastopka = 0; int _V1_rabota = 0; int _V1_zavershenie = 0; int _N1; int _V1; //скорость работы вентилятора в процентах
 
 int _Iteracia;// 1-старт, 2-работы, 3-стоп, 4-авария, 5 - покой
-float _T1 = 20; int _T_Rastopka = 0; int _T_Zavershenie = 0; int _T_Stop = 0; int _T_Avariya = 0;
+float _T1 = 20; int _T_Rastopka = 0; int _T_Zavershenie = 0; int _T_Stop = 0; int _T_Avariya = 0; int _T_Nasos2;
 
 
 byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
@@ -86,7 +87,7 @@ bool _b_N2;
 //текущий пунет меню,  флаг отображения меню
 int curMenu = 0; bool b_ShowmMenu = 0;
 //кол пунктов меню
-const int CountMenu = 7;
+const int CountMenu = 8;
 
 //создание кнопок через класс Bounce
 Bounce bLeft = Bounce( BUTTON_LEFT, 5 ); Bounce bRight = Bounce( BUTTON_RIGHT, 5 ); Bounce bUp = Bounce( BUTTON_UP, 5 ); Bounce bDown = Bounce( BUTTON_DOWN, 5 ); 
@@ -107,7 +108,8 @@ MENU_ITEM mMenu[CountMenu]= {
 "T_Rastopka    4", &_T_Rastopka,
 "T_Zavershenie 5", &_T_Zavershenie,
 "T_Stop        6", &_T_Stop,
-"T_Avariya     7", &_T_Avariya
+"T_Avariya     7", &_T_Avariya,
+"T_Nasos-2     8", &_T_Nasos2
 };
 
 
@@ -129,13 +131,18 @@ if (bLeft.update())
 //  bUp  +1 значение
 if (bUp.update())
   if (bUp.read() == HIGH)
+  {
     (*mMenu[curMenu].val)++;
+    _b_pref_change = TRUE;
+  }
 
   
  //  bDown -1 зачение
 if (bDown.update())
-  if (bDown.read() == HIGH)
+  if (bDown.read() == HIGH){
     (*mMenu[curMenu].val)--;
+    _b_pref_change = TRUE;
+  }
 
 
   //вывод использую буффур
@@ -242,6 +249,7 @@ void getEEPROM_DATA(){
   _T_Stop = _ROM_DATA._ROM_T_Stop;
   _T_Avariya = _ROM_DATA._ROM_T_Avariya;
   _b_N2 = _ROM_DATA._ROM_b_N2;
+  _T_Nasos2 = _ROM_DATA._ROM_T_Nasos2;
 }
 
 //EEPROM сохранение 
@@ -257,6 +265,7 @@ void putEEPROM_DATA(){
   _ROM_DATA._ROM_T_Stop = _T_Stop;
   _ROM_DATA._ROM_T_Avariya = _T_Avariya;
   _ROM_DATA._ROM_b_N2 = _b_N2;
+  _ROM_DATA._ROM_T_Nasos2 = _T_Nasos2;
 
   EEPROM.put(0, _ROM_DATA);
 }
@@ -274,6 +283,7 @@ void putDefoult_DATA(){
   _T_Stop = 40;         //30
   _T_Avariya = 85;      //85
   _b_N2 = TRUE;
+  _T_Nasos2 = 42;
 
  putEEPROM_DATA(); 
 }
@@ -377,7 +387,7 @@ switch (_Iteracia){  //режимы работы
     break;
 }
 
-if (_b_N2 && _T1 > 50)
+if (_b_N2 && _T1 > _T_Nasos2)
   analogWrite(A3, 1024);
   else
   analogWrite(A3,0);
@@ -432,16 +442,16 @@ void setup() {
   pinMode( BUTTON_DOWN, INPUT );
   pinMode( BUTTON_RIGHT, INPUT );
 
-  putDefoult_DATA();  // записать дефолтные данные
+  //putDefoult_DATA();  // записать дефолтные данные
   getEEPROM_DATA();  
 
   // Start DALLAS
   _sensor1.begin();
 
-  //
+ 
   __t1 = millis();
   __t2 = __t1;  
-  //_Iteracia = 5;
+ 
 
   WriteToDisplay();  
 }
@@ -510,7 +520,7 @@ if (t2-t1 > _V1){
 //   введение изменений на ходу
 if (!b_ShowmMenu){  //Если показан основной экран
 
-  // ++ к занчению вентилятора тек итерации
+/*  // ++ к занчению вентилятора тек итерации
   if (_Iteracia <= 3)
   {
   if ( bUp.update() )
@@ -525,7 +535,7 @@ if (!b_ShowmMenu){  //Если показан основной экран
          _b_pref_change = true;
        }
   }
-
+*/
 
   if ( bRight.update() )
       if ( bRight.read() ){
