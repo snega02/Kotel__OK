@@ -48,6 +48,7 @@ struct ROM_DATA{ //ROM структура данных
   float _ROM_T_Zavershenie;
   float _ROM_T_Stop;
   float _ROM_T_Avariya; //
+  bool _ROM_b_N2;
 };
 ROM_DATA _ROM_DATA;
 
@@ -77,6 +78,8 @@ char _Time[10]; char _Time_rastopka[10];  char _Time_rabota[10]; char _Time_zave
 int  t1; int t2; int ts1 = 0; int ts2 = 0;
 
 float _dT, _kT;
+
+bool _b_N2;
 
 
 //Переменные Меню
@@ -238,6 +241,7 @@ void getEEPROM_DATA(){
   _T_Zavershenie = _ROM_DATA._ROM_T_Zavershenie;
   _T_Stop = _ROM_DATA._ROM_T_Stop;
   _T_Avariya = _ROM_DATA._ROM_T_Avariya;
+  _b_N2 = _ROM_DATA._ROM_b_N2;
 }
 
 //EEPROM сохранение 
@@ -252,6 +256,7 @@ void putEEPROM_DATA(){
   _ROM_DATA._ROM_T_Zavershenie = _T_Zavershenie;
   _ROM_DATA._ROM_T_Stop = _T_Stop;
   _ROM_DATA._ROM_T_Avariya = _T_Avariya;
+  _ROM_DATA._ROM_b_N2 = _b_N2;
 
   EEPROM.put(0, _ROM_DATA);
 }
@@ -268,6 +273,7 @@ void putDefoult_DATA(){
   _T_Zavershenie = 45;  //50
   _T_Stop = 40;         //30
   _T_Avariya = 85;      //85
+  _b_N2 = TRUE;
 
  putEEPROM_DATA(); 
 }
@@ -371,6 +377,13 @@ switch (_Iteracia){  //режимы работы
     break;
 }
 
+if (_b_N2 && _T1 > 50)
+  analogWrite(A3, 1024);
+  else
+  analogWrite(A3,0);
+ 
+
+//Если смениласть итерация
 if(_old_Iteracia != _Iteracia)   {
      _b_pref_change = true;
      if (_Iteracia == 1)
