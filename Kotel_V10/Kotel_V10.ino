@@ -44,12 +44,12 @@ struct ROM_DATA{ //ROM структура данных
   int _ROM_V1_rabota;   //вентилятор растопка
   int _ROM_V1_zavershenie;     //вентилятор растопка
   int _ROM_V1;
+  int _ROM_T_Nasos2;
   float _ROM_T_Rastopka;
   float _ROM_T_Zavershenie;
   float _ROM_T_Stop;
   float _ROM_T_Avariya; //
-  bool _ROM_b_N2;
-  int _ROM_T_Nasos2;
+  int _ROM_b_N2;
 };
 ROM_DATA _ROM_DATA;
 
@@ -62,11 +62,8 @@ int _Count = -3000;  int __t1; int __t2; bool _b_pref_change = false;
 int _V1_rastopka = 0; int _V1_rabota = 0; int _V1_zavershenie = 0; int _N1; int _V1; //скорость работы вентилятора в процентах
 
 int _Iteracia;// 1-старт, 2-работы, 3-стоп, 4-авария, 5 - покой
-float _T1 = 20; int _T_Rastopka = 0; int _T_Zavershenie = 0; int _T_Stop = 0; int _T_Avariya = 0; int _T_Nasos2;
+float _T1 = 20; int _T_Rastopka = 0; int _T_Zavershenie = 0; int _T_Stop = 0; int _T_Avariya = 0; int _T_Nasos2 = 0; int _Zavod = 0;
 
-
-byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
-char week[8][10] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
 
 char _Rezhim[6][6] = {"","Start", "Work ", "Stop ", "Alarm", "Sleep"};
 
@@ -80,14 +77,14 @@ int  t1; int t2; int ts1 = 0; int ts2 = 0;
 
 float _dT, _kT;
 
-bool _b_N2;
+int _b_N2;
 
 
 //Переменные Меню
 //текущий пунет меню,  флаг отображения меню
 int curMenu = 0; bool b_ShowmMenu = 0;
 //кол пунктов меню
-const int CountMenu = 8;
+const int CountMenu = 9;
 
 //создание кнопок через класс Bounce
 Bounce bLeft = Bounce( BUTTON_LEFT, 5 ); Bounce bRight = Bounce( BUTTON_RIGHT, 5 ); Bounce bUp = Bounce( BUTTON_UP, 5 ); Bounce bDown = Bounce( BUTTON_DOWN, 5 ); 
@@ -109,7 +106,8 @@ MENU_ITEM mMenu[CountMenu]= {
 "T_Zavershenie 5", &_T_Zavershenie,
 "T_Stop        6", &_T_Stop,
 "T_Avariya     7", &_T_Avariya,
-"T_Nasos-2     8", &_T_Nasos2
+"T_Nasos-2     8", &_T_Nasos2,
+"Sbros na zavods", &_Zavod
 };
 
 
@@ -144,6 +142,10 @@ if (bDown.update())
     _b_pref_change = TRUE;
   }
 
+if (_Zavod != 0){
+  _Zavod = 0;
+  putDefoult_DATA();
+}
 
   //вывод использую буффур
   char ch[17];  
@@ -170,68 +172,6 @@ byte decToBcd(byte val){
 
 byte bcdToDec(byte val){
   return ( (val/16*10) + (val%16) );
-}
-
-void setDateDs1307(byte second,        // 0-59
-                   byte minute,        // 0-59
-                   byte hour,          // 1-23
-                   byte dayOfWeek,     // 1-7
-                   byte dayOfMonth,    // 1-28/29/30/31
-                   byte month,         // 1-12
-                   byte year)          // 0-99
-{
-   Wire.beginTransmission(0x68);
-   Wire.write(0);
-   Wire.write(decToBcd(second));    
-   Wire.write(decToBcd(minute));
-   Wire.write(decToBcd(hour));     
-   Wire.write(decToBcd(dayOfWeek));
-   Wire.write(decToBcd(dayOfMonth));
-   Wire.write(decToBcd(month));
-   Wire.write(decToBcd(year));
-   Wire.endTransmission();
-}
-
-void getDateDs1307(byte *second,byte *minute,byte *hour,byte *dayOfWeek,byte *dayOfMonth,byte *month,byte *year)
-{
-
-  Wire.beginTransmission(0x68);
-  Wire.write(0);
-  Wire.endTransmission();
-
-  Wire.requestFrom(0x68, 7);
-
-  *second     = bcdToDec(Wire.read() & 0x7f);
-  *minute     = bcdToDec(Wire.read());
-  *hour       = bcdToDec(Wire.read() & 0x3f); 
-  *dayOfWeek  = bcdToDec(Wire.read());
-  *dayOfMonth = bcdToDec(Wire.read());
-  *month      = bcdToDec(Wire.read());
-  *year       = bcdToDec(Wire.read());
-}
-  
-/////    температура из модуля часов
-float get3231Temp(){
-  byte tMSB, tLSB; 
-  float temp3231;
-
-  Wire.beginTransmission(0x68);
-  Wire.write(0x11);
-  Wire.endTransmission();
-  Wire.requestFrom(0x68, 2);
-
-  if(Wire.available()) {
-    tMSB = Wire.read(); //2's complement int portion
-    tLSB = Wire.read(); //fraction portion
-
-    temp3231 = (tMSB & B01111111); //do 2's math on Tmsb
-    temp3231 += ( (tLSB >> 6) * 0.25 ); //only care about bits 7 & 8
-  }
-  else {
-    //oh noes, no data!
-  }
-
-  return temp3231;
 }
 
 //////    EEPROM 
@@ -282,7 +222,7 @@ void putDefoult_DATA(){
   _T_Zavershenie = 45;  //50
   _T_Stop = 40;         //30
   _T_Avariya = 85;      //85
-  _b_N2 = TRUE;
+  _b_N2 = 1;
   _T_Nasos2 = 42;
 
  putEEPROM_DATA(); 
@@ -379,15 +319,15 @@ switch (_Iteracia){  //режимы работы
     break;
     case 5: // Покой
       _V1 = 0;   // выключить вентилятор
-      if (_T1 < 35)  //если температура воды больше 35
-          _N1 = 0;// выключить насос  
+      if (_T1 > 50)  //если вдруг температура воды больше
+          _N1 = 1;// включить насос  
       else
-          _N1 = 1;
-            
+          _N1 = 0;            
     break;
 }
 
-if (_b_N2 && _T1 > _T_Nasos2)
+//if (_b_N2 && _T1 > _T_Nasos2)
+if (_T1 > _T_Nasos2)
   analogWrite(A3, 1024);
   else
   analogWrite(A3,0);
@@ -415,16 +355,15 @@ void print_Prefference(){
   Serial.print("_T_Zavershenie =  "); Serial.println(_T_Zavershenie);
   Serial.print("_T_Stop =         "); Serial.println(_T_Stop);
   Serial.print("_T_Avariya =      "); Serial.println(_T_Avariya);
-  Serial.print("_kT        =      "); Serial.print("  ");Serial.println(_V1 * _kT);
-  Serial.print("_kT        =      "); Serial.print("  ");Serial.println(_kT);
-  
+  Serial.print("__T_Nasos2 =      "); Serial.print("  ");Serial.println(_T_Nasos2);
+   
 }
 
 //************   Инициализация    **********
 void setup() {
   lcd.begin(16, 2);
-  //Serial.begin(9600);
-  //print_Prefference();  //вывод информации в серийный порт
+  Serial.begin(9600);
+  print_Prefference();  //вывод информации в серийный порт
 
   _T1 = GetTempetarure(_sensor1);  
   _m[1] = millis();
@@ -548,7 +487,7 @@ if (!b_ShowmMenu){  //Если показан основной экран
 }
 
 if (_b_pref_change) { 
-  putEEPROM_DATA(); 
-  //print_Prefference(); // раккоменнтировать если надо делать дебаг настроек через ком порт
+  //putEEPROM_DATA(); 
+  print_Prefference(); // раккоменнтировать если надо делать дебаг настроек через ком порт
   _b_pref_change = false;};
 }
