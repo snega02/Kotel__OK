@@ -30,7 +30,7 @@
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature _sensor1(&oneWire);
 
-LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+LiquidCrystal lcd(4, 5, 6, 7, 8, 9);
 
 
 //**********   Константы и структуры    *********************
